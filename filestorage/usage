@@ -1,0 +1,3 @@
+curl -X POST http://localhost:8080/upload -H "User-ID: PD" -F "file=@C:\\temp.txt"
+
+curl -X GET "http://localhost:8080/download?filename=temp.txt" -H "User-ID: PD" -O download.txt
