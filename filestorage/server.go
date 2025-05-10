@@ -125,7 +125,7 @@ func getFile(w http.ResponseWriter, r *http.Request) {
 	userID := r.Header.Get("User-ID")
 	filename := r.URL.Query().Get("filename")
 	if filename == "" || userID == "" {
-		http.Error(w, "FileID or UserID query parameter missing", http.StatusBadRequest)
+		http.Error(w, "Filename or UserID query parameter missing", http.StatusBadRequest)
 		return
 	}
 
@@ -151,9 +151,46 @@ func getFile(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, filePath)
 }
 
+func shareFile(w http.ResponseWriter, r *http.Request) {
+	userID := r.Header.Get("User-ID")
+	filename := r.URL.Query().Get("filename")
+	sharedWith := r.URL.Query().Get("sharedWith")
+	if filename == "" || userID == ""  || sharedWith == "" {
+		http.Error(w, "Filename or UserID or SharedWith query parameter missing", http.StatusBadRequest)
+		return
+	}
+
+	key := userID + ":" + filename
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	versions, ok := fileMetadataMap[key]
+	if !ok || len(versions) == 0 {
+		http.Error(w, "File Not Found", http.StatusNotFound)
+		return
+	}
+
+	latestMetadata := versions[len(versions)-1]
+	latestMetadata.SharedWith = append(latestMetadata.SharedWith, sharedWith)
+
+	err := saveMetadataToFile(latestMetadata)
+	if err != nil {
+		http.Error(w, "Error saving metadata", http.StatusInternalServerError)
+		return
+	}
+
+	sharedKey := sharedWith + ":" + filename
+	fileMetadataMap[sharedKey] = append(fileMetadataMap[sharedKey], latestMetadata)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("File Shared Successfully"))
+}
+
 func main() {
 	http.HandleFunc("/upload", saveFile)
 	http.HandleFunc("/download", getFile)
+	http.HandleFunc("/share", shareFile)
 
 	fmt.Println("Server started at :8080")
 	http.ListenAndServe(":8080", nil)

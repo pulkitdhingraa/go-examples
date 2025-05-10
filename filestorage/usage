@@ -1,3 +1,9 @@
 curl -X POST http://localhost:8080/upload -H "User-ID: PD" -F "file=@C:\\temp.txt"
 
-curl -X GET "http://localhost:8080/download?filename=temp.txt" -H "User-ID: PD" -O download.txt
+curl -X GET "http://localhost:8080/download?filename=temp.txt" -H "User-ID: PD" -o download.txt
+
+curl -X GET "http://localhost:8080/download?filename=temp.txt" -H "User-ID: AB" --fail -o abdownload.txt
+
+curl -X POST "http://localhost:8080/share?filename=temp.txt&sharedWith=AB" -H "User-ID: PD"
+
+curl -X GET "http://localhost:8080/download?filename=temp.txt" -H "User-ID: AB" --fail -o abdownload.txt
